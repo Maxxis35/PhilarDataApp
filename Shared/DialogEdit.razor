@@ -1,0 +1,49 @@
+﻿@inject ISnackbar Snackbar
+
+<MudDialog >
+    <DialogContent>
+        <MudContainer Style="max-height: 500px; min-width: 400px; overflow-y: scroll">
+            <MudTextField @bind-Value="@concert.Title" Label="Concert Title" />
+            <MudTextField @bind-Value="@concert.DateOfThe" Label="Concert Date" />
+            <MudTextField @bind-Value="@concert.ConcertVenue" Label="Venue" />
+            <MudTextField @bind-Value="@concert.Conductor" Label="Conductor" T="string" Variant="Variant.Text" Lines="3" />
+            <MudTextField @bind-Value="@concert.Performer" Label="Performer" T="string" Variant="Variant.Text" Lines="3" />
+            <MudTextField @bind-Value="@concert.Soloist" Label="Solist" T="string" Variant="Variant.Text" Lines="3" />
+            <MudTextField @bind-Value="@concert.MusicalCompositions" Label="Musical Compositions" T="string" Variant="Variant.Text" Lines="3" />
+            <MudTextField @bind-Value="@concert.Note" Label="Note" T="string" Variant="Variant.Text" Lines="3" />
+            <MudTextField @bind-Value="@concert.CountCameras" />
+            <MudTextField @bind-Value="@concert.Sound" Label="Sound" />
+         </MudContainer>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" OnClick="EditConcert">Save Concert</MudButton>
+    </DialogActions>
+</MudDialog>
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+
+    [Parameter] public Concert concert { get; set; } = new Concert();
+
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+
+    private void EditConcert()
+    {
+        //In a real world scenario this bool would probably be a service to delete the item from api/database
+        bool editConcert = true;
+        if (editConcert)
+        {
+            Snackbar.Add("Server Deleted", Severity.Success);
+            MudDialog.Close(DialogResult.Ok(concert));
+        }
+        else
+        {
+            Snackbar.Add("Could not delete server!", Severity.Error);
+            MudDialog.Cancel();
+        }
+    }
+}

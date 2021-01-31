@@ -1,0 +1,38 @@
+﻿@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudTextField Value="@concert.Title" Label="Concert Title" ReadOnly="true" />
+        <MudTextField Value="@concert.DateOfThe.ToString("dd.MM.yyyy")" Label="Concert Data" ReadOnly="true" />
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Error" OnClick="DeleteConcert">Delete Concert</MudButton>
+    </DialogActions>
+</MudDialog>
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+
+    [Parameter] public Concert concert { get; set; } = new Concert();
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+
+    private void DeleteConcert()
+    {
+        //In a real world scenario this bool would probably be a service to delete the item from api/database
+        bool concertDeleted = true;
+        if (concertDeleted)
+        {
+            Snackbar.Add("Server Deleted", Severity.Success);
+            MudDialog.Close(DialogResult.Ok(concert));
+        }
+        else
+        {
+            Snackbar.Add("Could not delete server!", Severity.Error);
+            MudDialog.Cancel();
+        }
+    }
+}

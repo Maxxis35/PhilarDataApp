@@ -1,0 +1,201 @@
+﻿@page "/data"
+@inject ConcertServices service
+@inject ISnackbar Snackbar
+@inject IDialogService Dialog
+
+<MudGrid>
+    <MudItem xs="12">
+        <MudPaper Class="pt-4">
+        <div class="p-4 m-4"><h2>Таблица концертов филармонии</h2></div>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="6">
+        <MudPaper>
+            <MudExpansionPanels MultiExpansion="true">
+                <MudExpansionPanel Text="Ввод данных о концертах">
+                    <MudTextField Label="Title" @bind-value="@NewConcert.Title" For="@(()=> NewConcert.Title)" />
+                    <MudTextField Label="Date" @bind-Value="@NewConcert.DateOfThe" />
+                    @*<MudDatePicker Label="Date" Editable="true" DateFormat="dd.MM.yyyy" @bind-Date="@NewConcert.DateOfThe"/>*@
+                    <MudTextField Label="ConcertVenue" @bind-Value="@NewConcert.ConcertVenue" />
+                    <MudTextField Label="Conductor" T="string" Variant="Variant.Text" Lines="3" @bind-Value="@NewConcert.Conductor" />
+                    <MudTextField Label="Performer" T="string" Variant="Variant.Text" Lines="3" @bind-Value="@NewConcert.Performer" />
+                    <MudTextField Label="Solist" T="string" Variant="Variant.Text" Lines="3" @bind-Value="@NewConcert.Soloist" />
+                    <MudTextField Label="Composition" T="string" Variant="Variant.Text" Lines="3" @bind-Value="@NewConcert.MusicalCompositions" />
+                    <MudTextField Label="Note" T="string" Variant="Variant.Text" Lines="3" @bind-Value="@NewConcert.Note" />
+                    <MudTextField Label="Count Cameras" @bind-Value="@NewConcert.CountCameras" />
+                    <MudTextField Label="Sound" @bind-Value="@NewConcert.Sound" />
+                    <MudButton Color="Color.Primary" OnClick="AddConcertCommand_Executed">Save</MudButton>
+                </MudExpansionPanel>
+            </MudExpansionPanels>
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+
+
+
+<div>
+    <p>п рап</p>
+</div>
+
+@*<MudTable Items="@Concerts" Dense="@dense" Hover="@hover" Filter="new Func<Concert, bool>(FilterFunc)" @bind-SelectedItem="selected_item">*@
+    <MudTable ServerData="@(new Func<TableState, Task<TableData<Concert>>>(ServerReload))"
+              Dense="@dense" Hover="@hover" @ref="table"  @bind-SelectedItem="selected_item">
+        <ToolBarContent>
+            <MudText Typo="Typo.h6">Concert table</MudText>
+            <MudToolBarSpacer />
+            <MudTextField T="string" ValueChanged="@(s=>OnSearch(s))" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+        </ToolBarContent>
+        <HeaderContent>
+            <MudTh>N</MudTh>
+            <MudTh>Title</MudTh>
+            <MudTh>Date</MudTh>
+            <MudTh>Venue</MudTh>
+            <MudTh>Conductor</MudTh>
+            <MudTh>Performer</MudTh>
+            <MudTh>Soloist</MudTh>
+            <MudTh>MusicalCompositions</MudTh>
+            <MudTh>Note</MudTh>
+            <MudTh>CountCameras</MudTh>
+            <MudTh>Sound</MudTh>
+            <MudTh>edit</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Id">@context.Id</MudTd>
+            <MudTd DataLabel="Title">@context.Title</MudTd>
+            <MudTd DataLabel="Date">@context.DateOfThe.ToString("dd.MM.yyyy")</MudTd>
+            <MudTd DataLabel="ConcertVenue">@context.ConcertVenue</MudTd>
+            <MudTd DataLabel="Conductor">@context.Conductor</MudTd>
+            <MudTd DataLabel="Performer">@context.Performer</MudTd>
+            <MudTd DataLabel="Soloist">@context.Soloist</MudTd>
+            <MudTd DataLabel="MusicalCompositions">@context.MusicalCompositions</MudTd>
+            <MudTd DataLabel="Note">@context.Note</MudTd>
+            <MudTd DataLabel="CountCameras">@context.CountCameras</MudTd>
+            <MudTd DataLabel="Sound">@context.Sound</MudTd>
+            <MudTd>
+                <MudIconButton Icon="@Icons.Material.Edit" Color="Color.Primary" Size="Size.Small" Disabled="@(selected_item==null)" OnClick="(e=> EditConcertCommand_Executed(selected_item))"></MudIconButton>
+                <MudIconButton Icon="@Icons.Material.Delete" Size="Size.Small" Disabled="@(selected_item==null)" OnClick="(e)=> RemoveConcertCommand_Executed(selected_item)"></MudIconButton>
+            </MudTd>
+        </RowTemplate>
+        <PagerContent>
+            <MudTablePager />
+        </PagerContent>
+    </MudTable>
+    <MudSwitch @bind-Checked="@hover" Color="Color.Primary">Hover</MudSwitch>
+    <MudSwitch @bind-Checked="@dense" Color="Color.Secondary">Dense</MudSwitch>
+    <MudText Inline="true">Selected: @selected_item?.Title</MudText>
+
+
+
+
+
+    @code {
+
+        List<Concert> Concerts = new List<Concert>();
+
+        bool dense = false;
+        bool hover = true;
+        Concert selected_item = null;
+
+        private IEnumerable<Concert> pagedData;
+        private MudTable<Concert> table;
+
+        private int totalItems;
+        private string searchString = null;
+
+        private async Task<TableData<Concert>> ServerReload(TableState state)
+        {
+            IEnumerable<Concert> data = await service.GetConcertsAsync();
+            data = data.Where(element =>
+            {
+                if (string.IsNullOrWhiteSpace(searchString))
+                    return true;
+                if (!string.IsNullOrWhiteSpace(element.Title) && element.Title.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+                    return true;
+                if (!string.IsNullOrWhiteSpace(element.ConcertVenue) && element.ConcertVenue.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+                    return true;
+                if (!string.IsNullOrWhiteSpace(element.Conductor) && element.Conductor.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+                    return true;
+                if (!string.IsNullOrWhiteSpace(element.Performer) && element.Performer.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+                    return true;
+                if (!string.IsNullOrWhiteSpace(element.MusicalCompositions) && element.MusicalCompositions.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+                    return true;
+                if (!string.IsNullOrWhiteSpace(element.Note) && element.Note.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+                    return true;
+                return false;
+            }).ToArray();
+            totalItems = data.Count();
+
+            pagedData = data.Skip(state.Page * state.PageSize).Take(state.PageSize).ToArray();
+            return new TableData<Concert>() { TotalItems = totalItems, Items = pagedData };
+        }
+
+        private void OnSearch(string text)
+        {
+            searchString = text;
+            table.ReloadServerData();
+        }
+
+        protected override async Task OnInitializedAsync()
+        {
+            await RefreshConcerts();
+        }
+        private async Task RefreshConcerts()
+        {
+            Concerts = await service.GetConcertsAsync();
+        }
+
+        // Add Concert
+        public Concert NewConcert { get; set; } = new Concert();
+
+        private async void AddConcertCommand_Executed()
+        {
+            await service.AddConcertAsync(NewConcert);
+            NewConcert = new Concert();
+            await RefreshConcerts();
+        }
+
+        // Edit concert
+        private async void EditConcertCommand_Executed(Concert concert)
+        {
+            var parameters = new DialogParameters { ["concert"] = concert };
+
+            var dialog = Dialog.Show<DialogEdit>("Edit Concert", parameters);
+            var result = await dialog.Result;
+
+            if (!result.Cancelled)
+            {
+                await service.UpdateConcertAsync(concert);
+            }
+            await RefreshConcerts();
+        }
+
+        // Delete Concert
+        private async void RemoveConcertCommand_Executed(Concert concert)
+        {
+            var parameters = new DialogParameters { ["concert"] = concert };
+
+            var dialog = Dialog.Show<DialogDelete>("Delete Concert", parameters);
+            var result = await dialog.Result;
+
+            if (!result.Cancelled)
+            {
+                await service.RemoveConcertAsync(concert);
+            }
+            await RefreshConcerts();
+        }
+
+
+        //bool FilterFunc(Concert concert)
+        //{
+        //    if (string.IsNullOrWhiteSpace(searchString))
+        //        return true;
+        //    if ((concert.Title!=null) && (concert.Title.Contains(searchString)))
+        //        return true;
+        //    if ($"{concert.ConcertVenue} {concert.Performer} {concert.Soloist} {concert.Conductor}".Contains(searchString))
+        //        return true;
+
+        //    return false;
+        //}
+
+    }
